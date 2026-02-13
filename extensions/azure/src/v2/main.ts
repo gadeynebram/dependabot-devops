@@ -95,8 +95,14 @@ async function run() {
     tl.setResult(tl.TaskResult.Failed, err.message);
     tl.error(`An unhandled exception occurred: ${e}`);
     console.debug(e); // Dump the stack trace to help with debugging
-  } finally {
   }
 }
 
-run();
+run()
+  .then(() => {
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error('Fatal error:', err);
+    process.exit(1);
+  });
