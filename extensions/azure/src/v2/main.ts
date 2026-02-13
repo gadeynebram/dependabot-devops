@@ -98,6 +98,31 @@ async function run() {
   }
 }
 
+// Explicitly exit the process after the async run() completes.
+//
+// Why is process.exit() required?
+// Node.js normally exits automatically when the event loop has no more work, but in this case
+// several background resources keep the event loop alive even after the task "completes":
+//
+// 1. Docker Socket Connections (@paklo/runner/src/cleanup.ts):
+//    - The cleanup function creates Docker() instances but never closes them
+//    - Open Docker socket connections to the daemon keep file descriptors alive
+//    - The callback-based docker.listImages() API fires async operations that outlive cleanup()
+//
+// 2. HTTP Server (@paklo/runner/src/local/server.ts):
+//    - The Hono server is stopped via server.close() but may have lingering connections
+//    - Node's http.Server.close() only stops accepting new connections, existing ones may remain
+//
+// 3. Timers and Async Operations:
+//    - Various setTimeout() calls throughout the runner for Docker operations
+//    - Async Docker image operations that complete after the main flow finishes
+//
+// These are implementation details in the @paklo/runner package. Rather than refactoring
+// the entire cleanup and server lifecycle (which would be a larger change affecting multiple
+// platforms), we explicitly signal process termination here in the Azure extension task handler.
+//
+// This is the recommended approach for Azure Pipelines Node 20/24 handlers per Microsoft's
+// guidance when background operations cannot be easily awaited or canceled.
 run()
   .then(() => {
     process.exit(0);
