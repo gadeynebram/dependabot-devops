@@ -103,6 +103,6 @@ run()
     process.exit(0);
   })
   .catch((err) => {
-    console.error('Fatal error:', err);
+    console.error('Unhandled promise rejection:', err);
     process.exit(1);
   });
