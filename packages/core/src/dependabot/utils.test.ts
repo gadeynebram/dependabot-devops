@@ -1,6 +1,224 @@
 import { describe, expect, it } from 'vitest';
-import type { DependabotPersistedPr } from './job';
-import { shouldSupersede } from './utils';
+import type { DependabotDependency, DependabotPersistedPr } from './job';
+import type { SecurityVulnerability } from '@paklo/core/github';
+import { getPullRequestDescription, shouldSupersede } from './utils';
+
+describe('getPullRequestDescription', () => {
+  it('should include CVE information when security vulnerabilities are provided', () => {
+    const dependencies: DependabotDependency[] = [
+      {
+        name: 'test-package',
+        version: '2.0.0',
+        'previous-version': '1.0.0',
+        requirements: [],
+        removed: false,
+      },
+    ];
+
+    const securityVulnerabilities: SecurityVulnerability[] = [
+      {
+        package: { name: 'test-package', version: '1.0.0' },
+        advisory: {
+          identifiers: [
+            { type: 'CVE', value: 'CVE-2023-1234' },
+            { type: 'GHSA', value: 'GHSA-xxxx-yyyy-zzzz' },
+          ],
+          severity: 'HIGH',
+          summary: 'Test vulnerability',
+          description: 'Test description',
+          references: [],
+          cvss: null,
+          epss: null,
+          cwes: null,
+          publishedAt: null,
+          updatedAt: null,
+          withdrawnAt: null,
+          permalink: null,
+        },
+        vulnerableVersionRange: '<2.0.0',
+        firstPatchedVersion: { identifier: '2.0.0' },
+      },
+    ];
+
+    const description = getPullRequestDescription({
+      packageManager: 'npm',
+      body: 'Test body',
+      dependencies,
+      securityVulnerabilities,
+    });
+
+    expect(description).toContain('🔒 Security Vulnerabilities');
+    expect(description).toContain('CVE-2023-1234');
+    expect(description).toContain('GHSA-xxxx-yyyy-zzzz');
+    expect(description).toContain('test-package');
+    expect(description).toContain('1.0.0 → 2.0.0');
+  });
+
+  it('should not include CVE section when no vulnerabilities are provided', () => {
+    const dependencies: DependabotDependency[] = [
+      {
+        name: 'test-package',
+        version: '2.0.0',
+        'previous-version': '1.0.0',
+        requirements: [],
+        removed: false,
+      },
+    ];
+
+    const description = getPullRequestDescription({
+      packageManager: 'npm',
+      body: 'Test body',
+      dependencies,
+    });
+
+    expect(description).not.toContain('🔒 Security Vulnerabilities');
+    expect(description).toContain('Test body');
+  });
+
+  it('should not include CVE section when vulnerabilities do not match dependencies', () => {
+    const dependencies: DependabotDependency[] = [
+      {
+        name: 'test-package',
+        version: '2.0.0',
+        'previous-version': '1.0.0',
+        requirements: [],
+        removed: false,
+      },
+    ];
+
+    const securityVulnerabilities: SecurityVulnerability[] = [
+      {
+        package: { name: 'other-package', version: '1.0.0' },
+        advisory: {
+          identifiers: [{ type: 'CVE', value: 'CVE-2023-1234' }],
+          severity: 'HIGH',
+          summary: 'Test vulnerability',
+          description: null,
+          references: [],
+          cvss: null,
+          epss: null,
+          cwes: null,
+          publishedAt: null,
+          updatedAt: null,
+          withdrawnAt: null,
+          permalink: null,
+        },
+        vulnerableVersionRange: '<2.0.0',
+        firstPatchedVersion: { identifier: '2.0.0' },
+      },
+    ];
+
+    const description = getPullRequestDescription({
+      packageManager: 'npm',
+      body: 'Test body',
+      dependencies,
+      securityVulnerabilities,
+    });
+
+    expect(description).not.toContain('🔒 Security Vulnerabilities');
+    expect(description).toContain('Test body');
+  });
+
+  it('should handle multiple dependencies with multiple CVEs', () => {
+    const dependencies: DependabotDependency[] = [
+      {
+        name: 'package-one',
+        version: '2.0.0',
+        'previous-version': '1.0.0',
+        requirements: [],
+        removed: false,
+      },
+      {
+        name: 'package-two',
+        version: '3.0.0',
+        'previous-version': '2.0.0',
+        requirements: [],
+        removed: false,
+      },
+    ];
+
+    const securityVulnerabilities: SecurityVulnerability[] = [
+      {
+        package: { name: 'package-one', version: '1.0.0' },
+        advisory: {
+          identifiers: [{ type: 'CVE', value: 'CVE-2023-1111' }],
+          severity: 'HIGH',
+          summary: 'Test vulnerability 1',
+          description: null,
+          references: [],
+          cvss: null,
+          epss: null,
+          cwes: null,
+          publishedAt: null,
+          updatedAt: null,
+          withdrawnAt: null,
+          permalink: null,
+        },
+        vulnerableVersionRange: '<2.0.0',
+        firstPatchedVersion: { identifier: '2.0.0' },
+      },
+      {
+        package: { name: 'package-two', version: '2.0.0' },
+        advisory: {
+          identifiers: [
+            { type: 'CVE', value: 'CVE-2023-2222' },
+            { type: 'CVE', value: 'CVE-2023-3333' },
+          ],
+          severity: 'CRITICAL',
+          summary: 'Test vulnerability 2',
+          description: null,
+          references: [],
+          cvss: null,
+          epss: null,
+          cwes: null,
+          publishedAt: null,
+          updatedAt: null,
+          withdrawnAt: null,
+          permalink: null,
+        },
+        vulnerableVersionRange: '<3.0.0',
+        firstPatchedVersion: { identifier: '3.0.0' },
+      },
+    ];
+
+    const description = getPullRequestDescription({
+      packageManager: 'npm',
+      body: 'Test body',
+      dependencies,
+      securityVulnerabilities,
+    });
+
+    expect(description).toContain('🔒 Security Vulnerabilities');
+    expect(description).toContain('CVE-2023-1111');
+    expect(description).toContain('CVE-2023-2222');
+    expect(description).toContain('CVE-2023-3333');
+    expect(description).toContain('package-one');
+    expect(description).toContain('package-two');
+  });
+
+  it('should include compatibility score badge for single dependency', () => {
+    const dependencies: DependabotDependency[] = [
+      {
+        name: 'test-package',
+        version: '2.0.0',
+        'previous-version': '1.0.0',
+        requirements: [],
+        removed: false,
+      },
+    ];
+
+    const description = getPullRequestDescription({
+      packageManager: 'npm',
+      body: 'Test body',
+      dependencies,
+    });
+
+    expect(description).toContain('Dependabot compatibility score');
+    expect(description).toContain('dependency-name=test-package');
+    expect(description).toContain('previous-version=1.0.0');
+    expect(description).toContain('new-version=2.0.0');
+  });
+});
 
 describe('shouldSupersede', () => {
   it('returns false when there are no overlapping dependencies', () => {
