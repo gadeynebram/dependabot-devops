@@ -87,11 +87,15 @@ export function getPullRequestDescription({
 
   // If security vulnerabilities are available, add CVE information to the header
   if (securityVulnerabilities && securityVulnerabilities.length > 0) {
-    const cveInfo = extractCveInfo(dependencies, securityVulnerabilities);
-    if (cveInfo.length > 0) {
+    const { summary, details } = formatSecurityVulnerabilities(dependencies, securityVulnerabilities);
+    if (summary) {
       header += `### 🔒 Security Vulnerabilities\n\n`;
-      header += cveInfo.join('\n');
+      header += summary;
       header += '\n\n---\n\n';
+      if (details) {
+        header += details;
+        header += '\n\n---\n\n';
+      }
     }
   }
 
@@ -116,16 +120,15 @@ export function getPullRequestDescription({
 }
 
 /**
- * Extracts CVE information from security vulnerabilities for the given dependencies.
+ * Formats security vulnerability information for display in PR descriptions.
  * @param dependencies - The dependencies being updated in the PR.
- * @param securityVulnerabilities - The security vulnerabilities to extract CVE information from.
- * @returns An array of formatted CVE information strings.
+ * @param securityVulnerabilities - The security vulnerabilities to format.
+ * @returns An object with summary (IDs with badges) and details (full vulnerability info).
  */
-function extractCveInfo(
+function formatSecurityVulnerabilities(
   dependencies: DependabotDependency[],
   securityVulnerabilities: SecurityVulnerability[],
-): string[] {
-  const cveInfo: string[] = [];
+): { summary: string; details: string } {
   const dependencyNames = dependencies.map((dep) => dep.name);
 
   // Group vulnerabilities by dependency
@@ -139,32 +142,124 @@ function extractCveInfo(
     }
   }
 
-  // Format CVE information for each dependency
-  for (const [dependencyName, vulns] of vulnerabilitiesByDependency) {
-    const dep = dependencies.find((d) => d.name === dependencyName);
-    if (!dep) continue;
+  // Collect all unique CVE/GHSA IDs with their details
+  const idMap = new Map<string, { severity: string; advisory: SecurityVulnerability['advisory'] }>();
+  const summaryIds: string[] = [];
 
-    // Extract unique CVE IDs from all vulnerabilities for this dependency
-    const cveIds = new Set<string>();
-    const ghsaIds = new Set<string>();
-
+  for (const [, vulns] of vulnerabilitiesByDependency) {
     for (const vuln of vulns) {
       for (const identifier of vuln.advisory.identifiers) {
-        if (identifier.type === 'CVE') {
-          cveIds.add(identifier.value);
-        } else if (identifier.type === 'GHSA') {
-          ghsaIds.add(identifier.value);
+        if (identifier.type === 'CVE' || identifier.type === 'GHSA') {
+          const id = identifier.value;
+          if (!idMap.has(id)) {
+            idMap.set(id, { severity: vuln.advisory.severity || 'UNKNOWN', advisory: vuln.advisory });
+            summaryIds.push(id);
+          }
         }
       }
     }
-
-    if (cveIds.size > 0 || ghsaIds.size > 0) {
-      const ids = [...Array.from(cveIds), ...Array.from(ghsaIds)];
-      cveInfo.push(`**${dependencyName}** (${dep['previous-version']} → ${dep.version}): ${ids.join(', ')}`);
-    }
   }
 
-  return cveInfo;
+  if (summaryIds.length === 0) {
+    return { summary: '', details: '' };
+  }
+
+  // Build summary with badges
+  const summaryBadges = summaryIds.map((id) => {
+    const info = idMap.get(id)!;
+    const severityBadge = getSeverityBadge(info.severity);
+    return `${severityBadge} **${id}**`;
+  });
+  const summary = summaryBadges.join(' • ');
+
+  // Build details section
+  const detailsSections: string[] = [];
+  detailsSections.push('<details>');
+  detailsSections.push('<summary><strong>📋 Vulnerability Details</strong></summary>');
+  detailsSections.push('');
+
+  for (const id of summaryIds) {
+    const info = idMap.get(id)!;
+    const { advisory } = info;
+
+    detailsSections.push(`#### ${id}`);
+
+    // Add severity
+    const severityBadge = getSeverityBadge(info.severity);
+    detailsSections.push(`**Severity:** ${severityBadge} ${info.severity}`);
+    detailsSections.push('');
+
+    // Add summary
+    if (advisory.summary) {
+      detailsSections.push(`**Summary:** ${advisory.summary}`);
+      detailsSections.push('');
+    }
+
+    // Add CVSS score if available
+    if (advisory.cvss?.score) {
+      detailsSections.push(`**CVSS Score:** ${advisory.cvss.score}`);
+      detailsSections.push('');
+    }
+
+    // Add description if available and different from summary
+    if (advisory.description && advisory.description !== advisory.summary) {
+      detailsSections.push(`**Description:**`);
+      detailsSections.push(advisory.description);
+      detailsSections.push('');
+    }
+
+    // Add references/links
+    if (advisory.references && advisory.references.length > 0) {
+      detailsSections.push(`**References:**`);
+      for (const ref of advisory.references) {
+        detailsSections.push(`- ${ref.url}`);
+      }
+      detailsSections.push('');
+    }
+
+    // Add permalink if available
+    if (advisory.permalink) {
+      detailsSections.push(`**More Information:** ${advisory.permalink}`);
+      detailsSections.push('');
+    }
+
+    detailsSections.push('---');
+    detailsSections.push('');
+  }
+
+  // Remove last separator
+  if (detailsSections[detailsSections.length - 2] === '---') {
+    detailsSections.splice(detailsSections.length - 2, 1);
+  }
+
+  detailsSections.push('</details>');
+
+  return {
+    summary,
+    details: detailsSections.join('\n'),
+  };
+}
+
+/**
+ * Returns a badge for the given severity level.
+ * @param severity - The severity level.
+ * @returns A badge string.
+ */
+function getSeverityBadge(severity: string): string {
+  const severityUpper = severity.toUpperCase();
+  switch (severityUpper) {
+    case 'CRITICAL':
+      return '🔴';
+    case 'HIGH':
+      return '🟠';
+    case 'MODERATE':
+    case 'MEDIUM':
+      return '🟡';
+    case 'LOW':
+      return '🟢';
+    default:
+      return '⚪';
+  }
 }
 
 /**

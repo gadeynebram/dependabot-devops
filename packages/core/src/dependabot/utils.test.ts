@@ -1,5 +1,5 @@
-import type { SecurityVulnerability } from '../github';
 import { describe, expect, it } from 'vitest';
+import type { SecurityVulnerability } from '../github';
 import type { DependabotDependency, DependabotPersistedPr } from './job';
 import { getPullRequestDescription, shouldSupersede } from './utils';
 
@@ -26,14 +26,14 @@ describe('getPullRequestDescription', () => {
           severity: 'HIGH',
           summary: 'Test vulnerability',
           description: 'Test description',
-          references: [],
-          cvss: null,
+          references: [{ url: 'https://example.com/advisory' }],
+          cvss: { score: 7.5, vectorString: 'CVSS:3.1/AV:N/AC:L' },
           epss: null,
           cwes: null,
           publishedAt: null,
           updatedAt: null,
           withdrawnAt: null,
-          permalink: null,
+          permalink: 'https://github.com/advisories/GHSA-xxxx-yyyy-zzzz',
         },
         vulnerableVersionRange: '<2.0.0',
         firstPatchedVersion: { identifier: '2.0.0' },
@@ -50,8 +50,11 @@ describe('getPullRequestDescription', () => {
     expect(description).toContain('🔒 Security Vulnerabilities');
     expect(description).toContain('CVE-2023-1234');
     expect(description).toContain('GHSA-xxxx-yyyy-zzzz');
-    expect(description).toContain('test-package');
-    expect(description).toContain('1.0.0 → 2.0.0');
+    expect(description).toContain('🟠'); // HIGH severity badge
+    expect(description).toContain('Vulnerability Details');
+    expect(description).toContain('Test vulnerability');
+    expect(description).toContain('https://example.com/advisory');
+    expect(description).toContain('https://github.com/advisories/GHSA-xxxx-yyyy-zzzz');
   });
 
   it('should not include CVE section when no vulnerabilities are provided', () => {
@@ -192,8 +195,64 @@ describe('getPullRequestDescription', () => {
     expect(description).toContain('CVE-2023-1111');
     expect(description).toContain('CVE-2023-2222');
     expect(description).toContain('CVE-2023-3333');
-    expect(description).toContain('package-one');
-    expect(description).toContain('package-two');
+    expect(description).toContain('🟠'); // HIGH severity badge
+    expect(description).toContain('🔴'); // CRITICAL severity badge
+  });
+
+  it('should include detailed vulnerability information in collapsible section', () => {
+    const dependencies: DependabotDependency[] = [
+      {
+        name: 'test-package',
+        version: '2.0.0',
+        'previous-version': '1.0.0',
+        requirements: [],
+        removed: false,
+      },
+    ];
+
+    const securityVulnerabilities: SecurityVulnerability[] = [
+      {
+        package: { name: 'test-package', version: '1.0.0' },
+        advisory: {
+          identifiers: [{ type: 'CVE', value: 'CVE-2023-1234' }],
+          severity: 'MODERATE',
+          summary: 'Test vulnerability summary',
+          description: 'Detailed description of the vulnerability',
+          references: [
+            { url: 'https://nvd.nist.gov/vuln/detail/CVE-2023-1234' },
+            { url: 'https://example.com/security-advisory' },
+          ],
+          cvss: { score: 6.5, vectorString: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N' },
+          epss: null,
+          cwes: null,
+          publishedAt: null,
+          updatedAt: null,
+          withdrawnAt: null,
+          permalink: 'https://github.com/advisories/GHSA-test-1234-test',
+        },
+        vulnerableVersionRange: '<2.0.0',
+        firstPatchedVersion: { identifier: '2.0.0' },
+      },
+    ];
+
+    const description = getPullRequestDescription({
+      packageManager: 'npm',
+      body: 'Test body',
+      dependencies,
+      securityVulnerabilities,
+    });
+
+    expect(description).toContain('<details>');
+    expect(description).toContain('Vulnerability Details');
+    expect(description).toContain('#### CVE-2023-1234');
+    expect(description).toContain('MODERATE');
+    expect(description).toContain('Test vulnerability summary');
+    expect(description).toContain('Detailed description of the vulnerability');
+    expect(description).toContain('CVSS Score:** 6.5');
+    expect(description).toContain('https://nvd.nist.gov/vuln/detail/CVE-2023-1234');
+    expect(description).toContain('https://example.com/security-advisory');
+    expect(description).toContain('https://github.com/advisories/GHSA-test-1234-test');
+    expect(description).toContain('🟡'); // MODERATE severity badge
   });
 
   it('should include compatibility score badge for single dependency', () => {
