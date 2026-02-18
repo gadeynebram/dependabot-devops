@@ -1,3 +1,4 @@
+import type { SecurityVulnerability } from '@paklo/core/github';
 import type { DependabotDependency, DependabotPersistedPr } from './job';
 import type { DependabotClosePullRequest, DependabotCreatePullRequest } from './update';
 
@@ -68,11 +69,13 @@ export function getPullRequestDescription({
   body,
   dependencies,
   maxDescriptionLength,
+  securityVulnerabilities,
 }: {
   packageManager: string;
   body: string | null | undefined;
   dependencies: DependabotDependency[];
   maxDescriptionLength?: number;
+  securityVulnerabilities?: SecurityVulnerability[];
 }): string {
   let header = '';
   const footer = '';
@@ -81,6 +84,16 @@ export function getPullRequestDescription({
   // https://github.com/dependabot/dependabot-core/issues/9572
   // https://github.com/dependabot/dependabot-core/blob/313fcff149b3126cb78b38d15f018907d729f8cc/common/lib/dependabot/pull_request_creator/message_builder/link_and_mention_sanitizer.rb#L245-L252
   const description = (body || '').replace(new RegExp(decodeURIComponent('%EF%BF%BD%EF%BF%BD%EF%BF%BD'), 'g'), '');
+
+  // If security vulnerabilities are available, add CVE information to the header
+  if (securityVulnerabilities && securityVulnerabilities.length > 0) {
+    const cveInfo = extractCveInfo(dependencies, securityVulnerabilities);
+    if (cveInfo.length > 0) {
+      header += `### 🔒 Security Vulnerabilities\n\n`;
+      header += cveInfo.join('\n');
+      header += '\n\n---\n\n';
+    }
+  }
 
   // If there is exactly one dependency, add a compatibility score badge to the description header.
   // Compatibility scores are intended for single dependency security updates, not group updates.
@@ -100,6 +113,58 @@ export function getPullRequestDescription({
     return `${header}${description.substring(0, maxDescriptionLengthAfterHeaderAndFooter)}${footer}`;
   }
   return `${header}${description}${footer}`;
+}
+
+/**
+ * Extracts CVE information from security vulnerabilities for the given dependencies.
+ * @param dependencies - The dependencies being updated in the PR.
+ * @param securityVulnerabilities - The security vulnerabilities to extract CVE information from.
+ * @returns An array of formatted CVE information strings.
+ */
+function extractCveInfo(
+  dependencies: DependabotDependency[],
+  securityVulnerabilities: SecurityVulnerability[],
+): string[] {
+  const cveInfo: string[] = [];
+  const dependencyNames = dependencies.map((dep) => dep.name);
+
+  // Group vulnerabilities by dependency
+  const vulnerabilitiesByDependency = new Map<string, SecurityVulnerability[]>();
+  for (const vuln of securityVulnerabilities) {
+    if (dependencyNames.includes(vuln.package.name)) {
+      if (!vulnerabilitiesByDependency.has(vuln.package.name)) {
+        vulnerabilitiesByDependency.set(vuln.package.name, []);
+      }
+      vulnerabilitiesByDependency.get(vuln.package.name)!.push(vuln);
+    }
+  }
+
+  // Format CVE information for each dependency
+  for (const [dependencyName, vulns] of vulnerabilitiesByDependency) {
+    const dep = dependencies.find((d) => d.name === dependencyName);
+    if (!dep) continue;
+
+    // Extract unique CVE IDs from all vulnerabilities for this dependency
+    const cveIds = new Set<string>();
+    const ghsaIds = new Set<string>();
+    
+    for (const vuln of vulns) {
+      for (const identifier of vuln.advisory.identifiers) {
+        if (identifier.type === 'CVE') {
+          cveIds.add(identifier.value);
+        } else if (identifier.type === 'GHSA') {
+          ghsaIds.add(identifier.value);
+        }
+      }
+    }
+
+    if (cveIds.size > 0 || ghsaIds.size > 0) {
+      const ids = [...Array.from(cveIds), ...Array.from(ghsaIds)];
+      cveInfo.push(`**${dependencyName}** (${dep['previous-version']} → ${dep.version}): ${ids.join(', ')}`);
+    }
+  }
+
+  return cveInfo;
 }
 
 /**
