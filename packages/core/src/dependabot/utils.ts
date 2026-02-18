@@ -147,7 +147,7 @@ function extractCveInfo(
     // Extract unique CVE IDs from all vulnerabilities for this dependency
     const cveIds = new Set<string>();
     const ghsaIds = new Set<string>();
-    
+
     for (const vuln of vulns) {
       for (const identifier of vuln.advisory.identifiers) {
         if (identifier.type === 'CVE') {
