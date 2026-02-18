@@ -1,4 +1,4 @@
-import type { SecurityVulnerability } from '@paklo/core/github';
+import type { SecurityVulnerability } from '../github';
 import type { DependabotDependency, DependabotPersistedPr } from './job';
 import type { DependabotClosePullRequest, DependabotCreatePullRequest } from './update';
 

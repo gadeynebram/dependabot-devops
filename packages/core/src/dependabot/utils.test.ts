@@ -1,6 +1,6 @@
+import type { SecurityVulnerability } from '../github';
 import { describe, expect, it } from 'vitest';
 import type { DependabotDependency, DependabotPersistedPr } from './job';
-import type { SecurityVulnerability } from '@paklo/core/github';
 import { getPullRequestDescription, shouldSupersede } from './utils';
 
 describe('getPullRequestDescription', () => {
