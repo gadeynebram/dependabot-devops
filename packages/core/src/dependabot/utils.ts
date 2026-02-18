@@ -228,7 +228,7 @@ function formatSecurityVulnerabilities(
   }
 
   // Remove last separator
-  if (detailsSections[detailsSections.length - 2] === '---') {
+  if (detailsSections.length >= 2 && detailsSections[detailsSections.length - 2] === '---') {
     detailsSections.splice(detailsSections.length - 2, 1);
   }
 
