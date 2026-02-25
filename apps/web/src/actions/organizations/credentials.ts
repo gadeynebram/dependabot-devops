@@ -14,7 +14,7 @@ export const validateOrganizationCredentials = createServerAction({
   input: z.object({
     type: OrganizationTypeSchema,
     url: z.url(),
-    token: z.string().min(32).max(128),
+    token: z.string().trim().min(32).max(128),
     /** Optional organization ID to exclude from uniqueness check */
     id: z.string().optional(),
   }),
@@ -63,7 +63,7 @@ export const validateOrganizationCredentials = createServerAction({
 });
 
 export const validateGitHubToken = createServerAction({
-  input: z.object({ token: z.string().min(32).max(128) }),
+  input: z.object({ token: z.string().trim().min(32).max(128) }),
   auth: true,
   handler: async ({ input: { token } }): Promise<boolean> => {
     try {
@@ -112,7 +112,7 @@ export const validateGitHubToken = createServerAction({
 });
 
 export const updateOrganizationToken = createServerAction({
-  input: z.object({ id: z.string(), token: z.string().min(32).max(128) }),
+  input: z.object({ id: z.string(), token: z.string().trim().min(32).max(128) }),
   auth: true,
   handler: async ({ input: { id, token } }): Promise<boolean> => {
     await prisma.organizationCredential.update({
@@ -125,7 +125,7 @@ export const updateOrganizationToken = createServerAction({
 });
 
 export const updateGithubToken = createServerAction({
-  input: z.object({ id: z.string(), token: z.string().min(32).max(128) }),
+  input: z.object({ id: z.string(), token: z.string().trim().min(32).max(128) }),
   auth: true,
   handler: async ({ input: { id, token } }): Promise<boolean> => {
     // fetch organization

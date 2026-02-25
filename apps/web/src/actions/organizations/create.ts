@@ -24,7 +24,7 @@ export const createOrganizationWithCredential = createServerAction({
     slug: z.string().min(2).max(100),
     type: OrganizationTypeSchema,
     url: z.url(),
-    token: z.string().min(32).max(128),
+    token: z.string().trim().min(32).max(128),
     region: RegionCodeSchema,
   }),
   auth: true,
