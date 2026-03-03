@@ -1,18 +1,27 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { validateGitHubToken } from './credentials';
 
-describe('validateGitHubToken', () => {
-  it('returns invalid for empty token', async () => {
-    const result = await validateGitHubToken({ token: '' });
-    expect(result.valid).toBe(false);
-    expect(result.message).toBe('Token is required');
-  });
+// Mock Next.js headers and auth
+vi.mock('next/headers', () => ({
+  headers: vi.fn(() => ({
+    get: vi.fn(),
+  })),
+}));
 
+vi.mock('@/lib/auth', () => ({
+  auth: {
+    api: {
+      getSession: vi.fn(() => ({ user: { id: 'test-user' } })),
+    },
+  },
+}));
+
+describe('validateGitHubToken', () => {
   describe('real API', async () => {
     it('returns invalid for malformed token', async () => {
-      const result = await validateGitHubToken({ token: 'malformed_token' });
-      expect(result.valid).toBe(false);
-      expect(result.message).toBe('Invalid token. Please check your GitHub personal access token.');
+      const result = await validateGitHubToken({ token: 'a'.repeat(40) }); // properly-sized but invalid token
+      expect(result.data).toBeUndefined();
+      expect(result.error?.message).toBe('Invalid token. Please check your GitHub personal access token.');
     }, 2000);
 
     it('works with a real token', async () => {
@@ -24,8 +33,8 @@ describe('validateGitHubToken', () => {
       }
 
       const result = await validateGitHubToken({ token });
-      expect(result.valid).toBe(true);
-      expect(result.message).toBeUndefined();
+      expect(result.data).toBe(true);
+      expect(result.error).toBeUndefined();
     }, 2000);
   });
 });

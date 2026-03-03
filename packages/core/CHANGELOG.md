@@ -1,5 +1,18 @@
 # @paklo/core
 
+## 0.14.1
+
+### Patch Changes
+
+- [`37391ba`](https://github.com/mburumaxwell/paklo/commit/37391badfe38f536a1f7a782f83acbc826ad49a4) Thanks [@mburumaxwell](https://github.com/mburumaxwell)! - Update default experiments as of 02 March 2026
+
+## 0.14.0
+
+### Minor Changes
+
+- [`bc6cf84`](https://github.com/mburumaxwell/paklo/commit/bc6cf84b31da25a8611b0309d2a366d13ccdd4ef) Thanks [@mburumaxwell](https://github.com/mburumaxwell)! - Add support for 'pre-commit` ecosystem in beta
+  See [dependabot-action#1621](https://github.com/github/dependabot-action/pull/1621), [dependabot-core#1524](https://github.com/dependabot/dependabot-core/issues/1524), and [dependabot-core#13977](https://github.com/dependabot/dependabot-core/pull/13977)
+
 ## 0.13.0
 
 ### Minor Changes

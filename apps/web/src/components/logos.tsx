@@ -98,7 +98,7 @@ export function LinkedInLogo(props: IconProps) {
   );
 }
 
-export function PakloLogo({ fill = 'currentColor', ...props }: IconProps) {
+export function PakloIcon({ fill = 'currentColor', ...props }: IconProps) {
   return (
     <svg viewBox='0 0 500 500' aria-label='Logo' aria-hidden='true' {...props}>
       <g

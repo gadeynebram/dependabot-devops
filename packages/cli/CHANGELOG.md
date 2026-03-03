@@ -1,5 +1,28 @@
 # paklo
 
+## 0.18.5
+
+### Patch Changes
+
+- Updated dependencies [[`71c0a73`](https://github.com/mburumaxwell/paklo/commit/71c0a734017886e1171c476988fdfe43b23b72b4), [`ca49611`](https://github.com/mburumaxwell/paklo/commit/ca49611770cf4c309df8d56e63695288a0f094e9), [`37391ba`](https://github.com/mburumaxwell/paklo/commit/37391badfe38f536a1f7a782f83acbc826ad49a4)]:
+  - @paklo/runner@0.12.1
+  - @paklo/core@0.14.1
+
+## 0.18.4
+
+### Patch Changes
+
+- Updated dependencies [[`8e38517`](https://github.com/mburumaxwell/paklo/commit/8e38517b9e9fe1c529ad6076ba59c80720c297c7), [`bc6cf84`](https://github.com/mburumaxwell/paklo/commit/bc6cf84b31da25a8611b0309d2a366d13ccdd4ef), [`70351c4`](https://github.com/mburumaxwell/paklo/commit/70351c43f729b09d501c1d39fbc0795e4fe97bfd)]:
+  - @paklo/runner@0.12.0
+  - @paklo/core@0.14.0
+
+## 0.18.3
+
+### Patch Changes
+
+- Updated dependencies [[`2c2bc29`](https://github.com/mburumaxwell/paklo/commit/2c2bc29b4b184b9d6ff951659e02563c61826959)]:
+  - @paklo/runner@0.11.2
+
 ## 0.18.2
 
 ### Patch Changes
