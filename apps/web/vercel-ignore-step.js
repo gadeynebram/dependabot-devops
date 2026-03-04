@@ -8,11 +8,11 @@ if (branch.includes('changeset-release/')) {
   process.exit(0);
 }
 
-// ignore builds for dependabot branches, except for workflow and prisma
-if (branch.includes('dependabot/') && !(branch.includes('workflow') || branch.includes('prisma'))) {
-  console.log('🛑 - Ignoring build for dependabot branch:', branch);
-  process.exit(0);
-}
+// // ignore builds for dependabot branches, except for workflow and prisma
+// if (branch.includes('dependabot/') && !(branch.includes('workflow') || branch.includes('prisma'))) {
+//   console.log('🛑 - Ignoring build for dependabot branch:', branch);
+//   process.exit(0);
+// }
 
 // proceed with the build
 console.log('✅ - Build can proceed:', branch);
