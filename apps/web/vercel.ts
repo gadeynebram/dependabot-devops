@@ -21,7 +21,9 @@ export const config: VercelConfig = {
       schedule: '0 12 * * *',
     },
   ],
-  ignoreCommand: 'node vercel-ignore-step.js',
+  // https://turborepo.dev/docs/reference/turbo-ignore
+  // https://community.vercel.com/t/monorepo-initiates-deployment-even-if-skip-built-is-enabled/27233/4
+  ignoreCommand: 'npx turbo-ignore && node vercel-ignore-step.js',
   git: {
     deploymentEnabled: {
       'dependabot/*': false,
