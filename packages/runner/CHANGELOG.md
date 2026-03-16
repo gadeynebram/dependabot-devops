@@ -1,5 +1,22 @@
 # @paklo/runner
 
+## 0.12.3
+
+### Patch Changes
+
+- [#2609](https://github.com/mburumaxwell/paklo/pull/2609) [`a7b1dd0`](https://github.com/mburumaxwell/paklo/commit/a7b1dd00a9c73679ae2cca077c383ce5aeb5a9e0) Thanks [@dependabot](https://github.com/apps/dependabot)! - Updated docker container manifest for Bump the dependabot-core-images group across 1 directory with 31 updates
+
+- Updated dependencies [[`e56fdbe`](https://github.com/mburumaxwell/paklo/commit/e56fdbed8baceb22b73e21907fa23039cc5809d9)]:
+  - @paklo/core@0.14.2
+
+## 0.12.2
+
+### Patch Changes
+
+- [#2578](https://github.com/mburumaxwell/paklo/pull/2578) [`37783c8`](https://github.com/mburumaxwell/paklo/commit/37783c8030664295325dbe09e853b2f64b52abaf) Thanks [@dependabot](https://github.com/apps/dependabot)! - Updated docker container manifest for Bump the dependabot-core-images group across 1 directory with 30 updates
+
+- [#2596](https://github.com/mburumaxwell/paklo/pull/2596) [`c7225aa`](https://github.com/mburumaxwell/paklo/commit/c7225aaa6cdea244053026331211660d88c380ad) Thanks [@dependabot](https://github.com/apps/dependabot)! - Updated docker container manifest for Bump the dependabot-core-images group across 1 directory with 30 updates
+
 ## 0.12.1
 
 ### Patch Changes
